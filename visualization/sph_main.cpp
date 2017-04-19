@@ -11,7 +11,7 @@
 #include "sph_header.h"
 #include "sph_system.h"
 #include "sph_timer.h"
-
+#include "sph_common.h"
 
 Timer *sph_timer;
 char *window_title;
@@ -21,11 +21,10 @@ float window_height;
 
 SPHSystem *sph;
 
-void  init_sph_system()
+void  init_sph_system(float input_cutoff_ratio)
 {
-	sph=new SPHSystem();
+	sph=new SPHSystem(input_cutoff_ratio);
 	sph->init_system();
-
 	sph_timer=new Timer();
 	window_title=(char *)malloc(sizeof(char)*50);
 
@@ -111,9 +110,28 @@ void process_keyboard(unsigned char key, int x, int y)
 
 int main(int argc, char **argv)
 {
+	if( find_option( argc, argv, "-h" ) >= 0 )
+	    {
+	        printf( "Options:\n" );
+	        printf( "-h to see this help\n" );
+	        printf( "-cr <float> to set the ratio of cutoff to kernel range\n" );
+	        printf( "-o <filename> to specify the output file name\n" );
+	        printf( "-s <filename> to specify a summary file name\n" );
+	        printf( "-no turns off all correctness checks and particle output\n");
+	        return 0;
+	    }
+
+	    float input_cutoff_ratio = read_float( argc, argv, "-cr", 0.45f );
+			//
+	    // char *savename = read_string( argc, argv, "-o", NULL );
+	    // char *sumname = read_string( argc, argv, "-s", NULL );
+			//
+	    // FILE *fsave = savename ? fopen( savename, "w" ) : NULL;
+	    // FILE *fsum = sumname ? fopen ( sumname, "a" ) : NULL;
+
 	glutInit(&argc, argv);
 
-	init_sph_system();
+	init_sph_system(input_cutoff_ratio);
 
 	glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE);
 	glutInitWindowSize(window_width, window_height);

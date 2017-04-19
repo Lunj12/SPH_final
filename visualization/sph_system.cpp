@@ -1,8 +1,10 @@
 #include "sph_system.h"
 #include "sph_header.h"
 
-SPHSystem::SPHSystem()
+SPHSystem::SPHSystem(float input_cutoff_ratio)
 {
+	cutoff_ratio = input_cutoff_ratio;
+
 	max_particle=10000;
 	num_particle=0;
 
@@ -53,6 +55,7 @@ SPHSystem::SPHSystem()
 	printf("Spiky Kernel: %f\n", spiky_value);
 	printf("Visco Kernel: %f\n", visco_value);
 	printf("Self Density: %f\n", self_dens);
+	printf("Cutoff Ratio: %f\n", cutoff_ratio);
 }
 
 SPHSystem::~SPHSystem()
@@ -82,9 +85,9 @@ void SPHSystem::init_system()
 	vel.x=0.0f;
 	vel.y=0.0f;
 
-	for(pos.x=world_size.x*0.0f+kernel/2; pos.x<world_size.x*0.6f-kernel/2; pos.x+=(kernel*0.45f))
+	for(pos.x=world_size.x*0.0f+kernel/2; pos.x<world_size.x*0.6f-kernel/2; pos.x+=(kernel*cutoff_ratio))
 	{
-		for(pos.y=world_size.y*0.0f+kernel/2; pos.y<world_size.y*0.6f-kernel/2; pos.y+=(kernel*0.45f))
+		for(pos.y=world_size.y*0.0f+kernel/2; pos.y<world_size.y*0.6f-kernel/2; pos.y+=(kernel*cutoff_ratio))
 		{
 			add_particle(pos, vel);
 		}
@@ -152,7 +155,7 @@ void SPHSystem::comp_dens_pres()
 	int2 near_pos;
 	uint hash;
 
-	float2 rel_pos;
+	float2 rel_pos; 	// relative postion
 	float r2;
 
 	for(uint i=0; i<num_particle; i++)
@@ -189,6 +192,7 @@ void SPHSystem::comp_dens_pres()
 						continue;
 					}
 
+					// SPH method to calculate density
 					p->dens=p->dens + mass * poly6_value * pow(kernel_2-r2, 3);
 
 					np=np->next;

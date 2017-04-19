@@ -28,6 +28,7 @@ public:
 
 	float kernel;
 	float mass;
+	float cutoff_ratio;
 
 	float2 world_size;
 	float cell_size;
@@ -60,7 +61,7 @@ public:
 	uint sys_running;
 
 public:
-	SPHSystem();
+	SPHSystem(float input_cutoff_ratio);
 	~SPHSystem();
 	void animation();
 	void init_system();
