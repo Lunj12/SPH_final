@@ -1,8 +1,6 @@
 #ifndef __SPHTIMER_H__
 #define __SPHTIMER_H__
 
-// #include <windows.h>
-
 class Timer
 {
 private:
