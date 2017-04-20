@@ -1,5 +1,5 @@
 #include "sph_system.h"
-#include "sph_header.h"
+#include "sph_common.h"
 
 SPHSystem::SPHSystem(float input_cutoff_ratio)
 {
@@ -7,9 +7,11 @@ SPHSystem::SPHSystem(float input_cutoff_ratio)
 
 	max_particle=10000;
 	num_particle=0;
+  max_bc_particle=100;
+	num_particle_bc=0;
 
-	kernel=0.04f;
-	mass=0.02f;
+	kernel=0.04f; //effective distance
+	mass=0.02f; //constant mass
 
 	world_size.x=1.28f;
 	world_size.y=1.28f;
@@ -41,6 +43,7 @@ SPHSystem::SPHSystem(float input_cutoff_ratio)
 
 	mem=(Particle *)malloc(sizeof(Particle)*max_particle);
 	cell=(Particle **)malloc(sizeof(Particle *)*tot_cell);
+	BC=(Particle *)malloc(sizeof(Particle)*max_bc_particle);
 
 	sys_running=0;
 
@@ -62,6 +65,7 @@ SPHSystem::~SPHSystem()
 {
 	free(mem);
 	free(cell);
+	free(BC);
 }
 
 void SPHSystem::animation()
@@ -89,18 +93,57 @@ void SPHSystem::init_system()
 	{
 		for(pos.y=world_size.y*0.0f+kernel/2; pos.y<world_size.y*0.6f-kernel/2; pos.y+=(kernel*cutoff_ratio))
 		{
-			add_particle(pos, vel);
+			add_particle(pos, vel, mem, num_particle);
+			// printf("Num_particle %ld\n", num_particle);
 		}
 	}
 
 	printf("Init Particle: %u\n", num_particle);
 }
 
-void SPHSystem::add_particle(float2 pos, float2 vel)
+void SPHSystem::init_boundary()
 {
-	Particle *p=&(mem[num_particle]);
+   float2 pos;
+   float2 vel;
 
-	p->id=num_particle;
+   vel.x=0.0f;
+	 vel.y=0.0f;
+// Add bottom boundary
+
+	 for(pos.x=world_size.x*0.0f; pos.x<world_size.x*1.0f; pos.x+=(kernel*cutoff_ratio))
+ 	{
+		pos.y=world_size.x*0.0f;
+		add_particle(pos, vel, BC, num_particle_bc);
+	}
+
+	for(pos.x=world_size.x*0.0f; pos.x<world_size.x*1.0f; pos.x+=(kernel*cutoff_ratio))
+	{
+		pos.y=world_size.x*1.0f;
+		add_particle(pos, vel, BC, num_particle_bc);
+ 	}
+
+	for(pos.y=world_size.y*0.0f; pos.y<world_size.y*1.0f; pos.y+=(kernel*cutoff_ratio))
+	{
+		pos.x=world_size.x*0.0f;
+		add_particle(pos, vel, BC, num_particle_bc);
+ 	}
+
+	for(pos.y=world_size.y*0.0f; pos.y<world_size.y*1.0f; pos.y+=(kernel*cutoff_ratio))
+	{
+		pos.x=world_size.x*1.0f;
+		add_particle(pos, vel, BC, num_particle_bc);
+ 	}
+
+	// printf("here is %f",kernel*cutoff_ratio);
+	printf("Init BC Particle: %u\n", num_particle_bc);
+}
+
+void SPHSystem::add_particle(float2 pos, float2 vel, Particle *list, uint &num)
+{
+
+	Particle *p=&(list[num]);
+
+	p->id=num;
 
 	p->pos=pos;
 	p->vel=vel;
@@ -115,7 +158,8 @@ void SPHSystem::add_particle(float2 pos, float2 vel)
 
 	p->next=NULL;
 
-	num_particle++;
+	num++;
+	// printf("%ld\n", num);
 }
 
 void SPHSystem::build_table()
@@ -155,7 +199,7 @@ void SPHSystem::comp_dens_pres()
 	int2 near_pos;
 	uint hash;
 
-	float2 rel_pos; 	// relative postion
+	float2 rel_pos;
 	float r2;
 
 	for(uint i=0; i<num_particle; i++)
@@ -192,7 +236,6 @@ void SPHSystem::comp_dens_pres()
 						continue;
 					}
 
-					// SPH method to calculate density
 					p->dens=p->dens + mass * poly6_value * pow(kernel_2-r2, 3);
 
 					np=np->next;
@@ -360,7 +403,7 @@ uint SPHSystem::calc_cell_hash(int2 cell_pos)
 		return (uint)0xffffffff;
 	}
 
-	cell_pos.x = cell_pos.x & (grid_size.x-1);
+	  cell_pos.x = cell_pos.x & (grid_size.x-1);
     cell_pos.y = cell_pos.y & (grid_size.y-1);
 
 	return ((uint)(cell_pos.y))*grid_size.x+(uint)(cell_pos.x);

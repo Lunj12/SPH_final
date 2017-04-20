@@ -10,7 +10,7 @@ public:
 	float2 pos;
 	float2 vel;
 	float2 acc;
-	float2 ev;
+	float2 ev; //
 
 	float dens;
 	float pres;
@@ -25,6 +25,9 @@ class SPHSystem
 public:
 	uint max_particle;
 	uint num_particle;
+	uint max_bc_particle;
+	uint num_particle_bc;
+	uint num;
 
 	float kernel;
 	float mass;
@@ -57,6 +60,8 @@ public:
 
 	Particle *mem;
 	Particle **cell;
+	Particle *BC;
+	Particle *list;
 
 	uint sys_running;
 
@@ -65,7 +70,8 @@ public:
 	~SPHSystem();
 	void animation();
 	void init_system();
-	void add_particle(float2 pos, float2 vel);
+	void init_boundary();
+	void add_particle(float2 pos, float2 vel, Particle *list, uint &num);
 
 private:
 	void build_table();

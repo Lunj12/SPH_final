@@ -1,4 +1,3 @@
-#include "sph_header.h"
 #include "sph_system.h"
 #include "sph_timer.h"
 #include "sph_common.h"
@@ -17,6 +16,8 @@ void  init_sph_system(float input_cutoff_ratio)
 {
 	sph=new SPHSystem(input_cutoff_ratio);
 	sph->init_system();
+	sph->init_boundary();
+
 	sph_timer=new Timer();
 	window_title=(char *)malloc(sizeof(char)*50);
 
@@ -50,8 +51,17 @@ void display_particle()
 		{
 			glColor3f(0.2f, 0.2f, 1.0f);
 		}
+
 		glBegin(GL_POINTS);
-			glVertex2f(sph->mem[i].pos.x, sph->mem[i].pos.y);
+		glVertex2f(sph->mem[i].pos.x, sph->mem[i].pos.y);
+		glEnd();
+	}
+  printf("NUM_PARTICLE_BC=%d\n", sph->num_particle_bc);
+	for(uint i=0; i<sph->num_particle_bc; i++)
+  {
+		glColor3f(0.2f, 0.8f, 1.0f);
+		glBegin(GL_POINTS);
+		glVertex2f(sph->BC[i].pos.x, sph->BC[i].pos.y);
 		glEnd();
 	}
 }
@@ -92,7 +102,6 @@ void reshape_func(int width, int height)
 	glutReshapeWindow(window_width, window_height);
 }
 
-
 void process_keyboard(unsigned char key, int x, int y)
 {
 	if(key == ' ')
@@ -106,11 +115,14 @@ void visualization(int argc, char **argv)
     glutInit(&argc, argv);
 
   	init_sph_system(input_cutoff_ratio);
-
+		printf("flag1\n");
   	glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE);
+		printf("flag1.1\n");
   	glutInitWindowSize(window_width, window_height);
+		printf("flag1.2\n");
   	glutCreateWindow("SPH System 2D");
-
+		printf("flag1.3\n");
+		printf("flag2\n");
   	init();
 
       glutDisplayFunc(display_func);

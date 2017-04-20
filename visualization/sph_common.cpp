@@ -1,12 +1,9 @@
-#include <stdlib.h>
-#include <stdio.h>
 #include <assert.h>
 #include <float.h>
-#include <string.h>
-#include <math.h>
 #include <time.h>
 #include <sys/time.h>
 #include "sph_common.h"
+#include "sph_system.h"
 
 //
 //  timer
@@ -28,17 +25,17 @@ double read_timer( )
 //
 //  I/O routines
 //
-// void save( FILE *f, int n, particle_t *p )
-// {
-//     static bool first = true;
-//     if( first )
-//     {
-//         fprintf( f, "%d %g\n", n, size );
-//         first = false;
-//     }
-//     for( int i = 0; i < n; i++ )
-//         fprintf( f, "%g %g\n", p[i].x, p[i].y );
-// }
+void save( FILE *f, int n, SPHSystem *sph)
+{
+    static bool first = true;
+    if( first )
+    {
+        fprintf( f, "n = %d size = %g\n", sph->num_particle, sph->world_size.x);
+        first = false;
+    }
+    for( int i = 0; i < n; i++ )
+        fprintf( f, "%g %g\n", sph->mem[i].pos.x, sph->mem[i].pos.y);
+}
 
 //
 //  command line option processing

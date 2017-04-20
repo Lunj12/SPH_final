@@ -1,14 +1,18 @@
 #ifndef __SPHCOMMON_H__
 #define __SPHCOMMON_H__
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <string.h>
+#include "sph_system.h"
+
+#define PI 3.141592f
+#define INF 1E-12f
+#define BOUNDARY 0.001f
+
 inline int min( int a, int b ) { return a < b ? a : b; }
 inline int max( int a, int b ) { return a > b ? a : b; }
-
-//
-//  saving parameters
-//
-const int NSTEPS = 1000;
-const int SAVEFREQ = 10;
 
 //
 //  timing routines
@@ -19,7 +23,7 @@ double read_timer( );
 //  I/O routines
 //
 FILE *open_save( char *filename, int n );
-// void save( FILE *f, int n, particle_t *p );
+void save( FILE *f, int n, SPHSystem *sph);
 
 //
 //  argument processing routines
