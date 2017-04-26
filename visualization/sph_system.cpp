@@ -402,7 +402,7 @@ uint SPHSystem::calc_cell_hash(int2 cell_pos)
 		return (uint)0xffffffff;
 	}
 
-	  cell_pos.x = cell_pos.x & (grid_size.x-1);
+		cell_pos.x = cell_pos.x & (grid_size.x-1);
     cell_pos.y = cell_pos.y & (grid_size.y-1);
 
 	return ((uint)(cell_pos.y))*grid_size.x+(uint)(cell_pos.x);
