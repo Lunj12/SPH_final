@@ -7,8 +7,10 @@ SPHSystem::SPHSystem(float input_cutoff_ratio)
 
 	max_particle=10000;
 	num_particle=0;
-  max_bc_particle=10000;
+ 	max_bc_particle=10000;
 	num_particle_bc=0;
+	max_body_particle=1000;
+	num_particle_body=0;
 
 	kernel=0.04f; //effective distance
 	mass=0.02f; //constant mass
@@ -16,6 +18,9 @@ SPHSystem::SPHSystem(float input_cutoff_ratio)
 	world_size.x=1.28f;
 	world_size.y=1.28f;
 	cell_size=kernel;
+	center.x=world_size.x/2;
+	center.y=world_size.y*2/3;
+	radi=0.04f;
 	grid_size.x=(uint)ceil(world_size.x/cell_size);
 	grid_size.y=(uint)ceil(world_size.y/cell_size);
 	tot_cell=grid_size.x*grid_size.y;
@@ -44,7 +49,8 @@ SPHSystem::SPHSystem(float input_cutoff_ratio)
 	mem=(Particle *)malloc(sizeof(Particle)*max_particle);
 	cell=(Particle **)malloc(sizeof(Particle *)*tot_cell);
 	BC=(Particle *)malloc(sizeof(Particle)*max_bc_particle);
-
+  BODY=(Particle *)malloc(sizeof(Particle)*max_body_particle);
+	cell_body=(Particle **)malloc(sizeof(Particle *)*tot_cell);
 	sys_running=0;
 
 	printf("Initialize SPH:\n");
@@ -66,6 +72,7 @@ SPHSystem::~SPHSystem()
 	free(mem);
 	free(cell);
 	free(BC);
+	free(BODY);
 }
 
 void SPHSystem::animation()
@@ -76,9 +83,12 @@ void SPHSystem::animation()
 	}
 
 	build_table();
+	// build_table_body();
 	comp_dens_pres();
 	comp_force_adv();
+	// comp_dens_pres_body();
 	advection();
+	move_body();
 }
 
 void SPHSystem::init_system()
@@ -89,9 +99,9 @@ void SPHSystem::init_system()
 	vel.x=0.0f;
 	vel.y=0.0f;
 
-	for(pos.x=world_size.x*0.0f+kernel/2; pos.x<world_size.x*0.6f-kernel/2; pos.x+=(kernel*cutoff_ratio))
+	for(pos.x=world_size.x*0.0f+kernel*0.75f; pos.x<world_size.x*1.0f-kernel*0.25f; pos.x+=(kernel*cutoff_ratio))
 	{
-		for(pos.y=world_size.y*0.0f+kernel/2; pos.y<world_size.y*0.6f-kernel/2; pos.y+=(kernel*cutoff_ratio))
+		for(pos.y=world_size.y*0.0f+kernel; pos.y<world_size.y*0.4f-kernel*0.25f; pos.y+=(kernel*cutoff_ratio))
 		{
 			add_particle(pos, vel, mem, num_particle);
 			// printf("Num_particle %ld\n", num_particle);
@@ -109,33 +119,80 @@ void SPHSystem::init_boundary()
    vel.x=0.0f;
 	 vel.y=0.0f;
 // Add bottom boundary
-	//
-	 for(pos.x=world_size.x*0.0f; pos.x<world_size.x*1.0f; pos.x+=(kernel*cutoff_ratio))
+
+	 for(pos.x=world_size.x*0.0f+kernel/2; pos.x<world_size.x*1.0f-kernel/2; pos.x+=(kernel*0.2f))
  	{
-		pos.y=world_size.y*0.0f;
+		pos.y=world_size.x*0.0f+kernel/2;
 		add_particle(pos, vel, BC, num_particle_bc);
 	}
 
-	for(pos.x=world_size.x*0.0f; pos.x<world_size.x*1.0f; pos.x+=(kernel*cutoff_ratio))
+	for(pos.x=world_size.x*0.0f+kernel/2; pos.x<world_size.x*1.0f-kernel/2; pos.x+=(kernel*0.2f))
 	{
-		pos.y=world_size.y*1.0f;
+		pos.y=world_size.x*1.0f-kernel/2;
 		add_particle(pos, vel, BC, num_particle_bc);
  	}
 
-	for(pos.y=world_size.y*0.0f; pos.y<world_size.y*1.0f; pos.y+=(kernel*cutoff_ratio))
+	for(pos.y=world_size.y*0.0f+kernel/2; pos.y<world_size.y*1.0f-kernel/2; pos.y+=(kernel*0.2f))
 	{
-		pos.x=world_size.x*0.0f;
+		pos.x=world_size.x*0.0f+kernel/2;
 		add_particle(pos, vel, BC, num_particle_bc);
  	}
 
-	for(pos.y=world_size.y*0.0f; pos.y<world_size.y*1.0f; pos.y+=(kernel*cutoff_ratio))
+	for(pos.y=world_size.y*0.0f+kernel/2; pos.y<world_size.y*1.0f-kernel/2; pos.y+=(kernel*0.2f))
 	{
-		pos.x=world_size.x*1.0f;
+		pos.x=world_size.x*1.0f-kernel/2;
 		add_particle(pos, vel, BC, num_particle_bc);
  	}
 
-	printf("Init BC Particle: %u\n", num_particle_bc);
+
+	for(pos.x=world_size.x*0.0f+kernel/2; pos.x<world_size.x*1.0f-kernel/2; pos.x+=(kernel*0.2f))
+ {
+	 pos.y=world_size.x*0.0f+kernel/3;
+	 add_particle(pos, vel, BC, num_particle_bc);
+ }
+
+ for(pos.x=world_size.x*0.0f+kernel/2; pos.x<world_size.x*1.0f-kernel/2; pos.x+=(kernel*0.2f))
+ {
+	 pos.y=world_size.x*1.0f-kernel/3;
+	 add_particle(pos, vel, BC, num_particle_bc);
+ }
+
+ for(pos.y=world_size.y*0.0f+kernel/2; pos.y<world_size.y*1.0f-kernel/2; pos.y+=(kernel*0.2f))
+ {
+	 pos.x=world_size.x*0.0f+kernel/3;
+	 add_particle(pos, vel, BC, num_particle_bc);
+ }
+
+ for(pos.y=world_size.y*0.0f+kernel/2; pos.y<world_size.y*1.0f-kernel/2; pos.y+=(kernel*0.2f))
+ {
+	 pos.x=world_size.x*1.0f-kernel/3;
+	 add_particle(pos, vel, BC, num_particle_bc);
+ }
+
+
+
+		printf("Init BC Particle: %d\n", num_particle_bc);
+
 }
+
+void SPHSystem::init_body()
+{
+	float2 pos;
+	float2 vel;
+
+	vel.x=0.0f;
+	vel.y=0.0f;
+
+	for(float theta=0; theta<=2*PI; theta+=(PI/100))
+	{
+	    pos.x=center.x+radi*cos(theta);
+			pos.y=center.y+radi*sin(theta);
+			add_particle(pos, vel, BODY, num_particle_body);
+	}
+	printf("Num_particle BODY =%d\n", num_particle_body);
+
+}
+
 
 void SPHSystem::add_particle(float2 pos, float2 vel, Particle *list, uint &num)
 {
@@ -187,6 +244,74 @@ void SPHSystem::build_table()
 			cell[hash]=p;
 		}
 	}
+
+// Add Boundary Particles
+	for(uint i=0; i<num_particle_bc; i++)
+	{
+		p=&(BC[i]);
+		hash=calc_cell_hash(calc_cell_pos(p->pos));
+
+		if(cell[hash] == NULL)
+		{
+			p->next=NULL;
+			cell[hash]=p;
+		}
+		else
+		{
+			p->next=cell[hash];
+			cell[hash]=p;
+		}
+	}
+
+	// // ADD BODY
+	for(uint i=0; i<num_particle_body; i++)
+	{
+
+		p=&(BODY[i]);
+		hash=calc_cell_hash(calc_cell_pos(p->pos));
+
+		if(cell[hash] == NULL)
+		{
+			p->next=NULL;
+			cell[hash]=p;
+		}
+		else
+		{
+			p->next=cell[hash];
+			cell[hash]=p;
+		}
+		}
+
+}
+
+void SPHSystem::build_table_body()
+{
+	Particle *p;
+	uint hash;
+
+	for(uint i=0; i<tot_cell; i++)
+	{
+		cell_body[i]=NULL;
+	}
+
+//Add fluid particles
+		for(uint i=0; i<num_particle_body; i++)
+		{
+			p=&(BODY[i]);
+			hash=calc_cell_hash(calc_cell_pos(p->pos));
+
+			if(cell_body[hash] == NULL)
+			{
+				p->next=NULL;
+				cell_body[hash]=p;
+			}
+			else
+			{
+				p->next=cell_body[hash];
+				cell_body[hash]=p;
+			}
+		}
+
 }
 
 void SPHSystem::comp_dens_pres()
@@ -244,6 +369,62 @@ void SPHSystem::comp_dens_pres()
 
 		p->dens=p->dens+self_dens;
 		p->pres=(pow(p->dens / rest_density, 7) - 1) *gas_constant;
+	}
+}
+
+
+void SPHSystem::comp_dens_pres_body()
+{
+	Particle *p;
+	Particle *np;
+
+	int2 cell_pos;
+	int2 near_pos;
+	uint hash;
+
+	float2 rel_pos;
+	float r2;
+
+	for(uint i=0; i<num_particle_body; i++)
+	{
+		p=&(BODY[i]);
+		cell_pos=calc_cell_pos(p->pos);
+
+
+		for(int x=-1; x<=1; x++)
+		{
+			for(int y=-1; y<=1; y++)
+			{
+				near_pos.x=cell_pos.x+x;
+				near_pos.y=cell_pos.y+y;
+				hash=calc_cell_hash(near_pos);
+
+				if(hash == 0xffffffff)
+				{
+					continue;
+				}
+
+				np=cell_body[hash];
+				while(np != NULL)
+				{
+					rel_pos.x=np->pos.x-p->pos.x;
+					rel_pos.y=np->pos.y-p->pos.y;
+					r2=rel_pos.x*rel_pos.x+rel_pos.y*rel_pos.y;
+
+					if(r2<INF || r2>=kernel_2)
+					{
+						np=np->next;
+						continue;
+					}
+
+					p->dens=p->dens + mass * poly6_value * pow(kernel_2-r2, 3);
+
+					np=np->next;
+				}
+			}
+		}
+		// p->dens=p->dens;
+		// p->pres=(pow(p->dens / rest_density, 7) - 1) *gas_constant;
 	}
 }
 
@@ -357,34 +538,53 @@ void SPHSystem::advection()
 		p->pos.x=p->pos.x+p->vel.x*time_step;
 		p->pos.y=p->pos.y+p->vel.y*time_step;
 
-		if(p->pos.x >= world_size.x)
-		{
-			p->vel.x=p->vel.x*wall_damping;
-			p->pos.x=world_size.x-BOUNDARY;
-		}
-
-		if(p->pos.x < 0.0f)
-		{
-			p->vel.x=p->vel.x*wall_damping;
-			p->pos.x=0.0f;
-		}
-
-		if(p->pos.y >= world_size.y)
-		{
-			p->vel.y=p->vel.y*wall_damping;
-			p->pos.y=world_size.y-BOUNDARY;
-		}
-
-		if(p->pos.y < 0.0f)
-		{
-			p->vel.y=p->vel.y*wall_damping;
-			p->pos.y=0.0f;
-		}
+		// if(p->pos.x >= world_size.x)
+		// {
+		// 	p->vel.x=p->vel.x*wall_damping;
+		// 	p->pos.x=world_size.x-BOUNDARY;
+		// }
+		//
+		// if(p->pos.x < 0.0f)
+		// {
+		// 	p->vel.x=p->vel.x*wall_damping;
+		// 	p->pos.x=0.0f;
+		// }
+		//
+		// if(p->pos.y >= world_size.y)
+		// {
+		// 	p->vel.y=p->vel.y*wall_damping;
+		// 	p->pos.y=world_size.y-BOUNDARY;
+		// }
+		//
+		// if(p->pos.y < 0.0f)
+		// {
+		// 	p->vel.y=p->vel.y*wall_damping;
+		// 	p->pos.y=0.0f;
+		// }
 
 		p->ev.x=(p->ev.x+p->vel.x)/2;
 		p->ev.y=(p->ev.y+p->vel.y)/2;
 	}
 }
+
+void SPHSystem::move_body()
+{
+  if(center.y<0.2f){
+		return;
+	}
+	Particle *p;
+
+  center.x=0.0f;
+	center.y+=-0.003f;
+
+	for(uint i=0; i<num_particle_body; i++)
+	{
+			p=&(BODY[i]);
+	    p->pos.x=center.x+p->pos.x;
+			p->pos.y=-0.003f+p->pos.y;
+	}
+}
+
 
 int2 SPHSystem::calc_cell_pos(float2 p)
 {
@@ -401,9 +601,9 @@ uint SPHSystem::calc_cell_hash(int2 cell_pos)
 	{
 		return (uint)0xffffffff;
 	}
-
-		cell_pos.x = cell_pos.x & (grid_size.x-1);
+		// printf("cellposx=%d; \n", cell_pos.x);
+	  cell_pos.x = cell_pos.x & (grid_size.x-1);
     cell_pos.y = cell_pos.y & (grid_size.y-1);
-
+    // printf("cellposx=%d; grid_size.x=%d\n", cell_pos.x,grid_size.x);
 	return ((uint)(cell_pos.y))*grid_size.x+(uint)(cell_pos.x);
 }

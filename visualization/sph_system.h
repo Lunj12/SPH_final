@@ -27,6 +27,8 @@ public:
 	uint num_particle;
 	uint max_bc_particle;
 	uint num_particle_bc;
+	uint max_body_particle;
+	uint num_particle_body;
 	uint num;
 
 	float kernel;
@@ -34,6 +36,8 @@ public:
 	float cutoff_ratio;
 
 	float2 world_size;
+	float2 center;
+	float radi;
 	float cell_size;
 	uint2 grid_size;
 	uint tot_cell;
@@ -61,7 +65,9 @@ public:
 	Particle *mem;
 	Particle **cell;
 	Particle *BC;
+	Particle *BODY;
 	Particle *list;
+	Particle **cell_body;
 
 	uint sys_running;
 
@@ -71,13 +77,17 @@ public:
 	void animation();
 	void init_system();
 	void init_boundary();
+	void init_body();
 	void add_particle(float2 pos, float2 vel, Particle *list, uint &num);
 
 private:
 	void build_table();
+	void build_table_body();
 	void comp_dens_pres();
 	void comp_force_adv();
+	void comp_dens_pres_body();
 	void advection();
+	void move_body();
 
 private:
 	int2 calc_cell_pos(float2 p);
