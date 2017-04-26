@@ -7,7 +7,7 @@ SPHSystem::SPHSystem(float input_cutoff_ratio)
 
 	max_particle=10000;
 	num_particle=0;
-  max_bc_particle=100;
+  max_bc_particle=10000;
 	num_particle_bc=0;
 
 	kernel=0.04f; //effective distance
@@ -109,16 +109,16 @@ void SPHSystem::init_boundary()
    vel.x=0.0f;
 	 vel.y=0.0f;
 // Add bottom boundary
-
+	//
 	 for(pos.x=world_size.x*0.0f; pos.x<world_size.x*1.0f; pos.x+=(kernel*cutoff_ratio))
  	{
-		pos.y=world_size.x*0.0f;
+		pos.y=world_size.y*0.0f;
 		add_particle(pos, vel, BC, num_particle_bc);
 	}
 
 	for(pos.x=world_size.x*0.0f; pos.x<world_size.x*1.0f; pos.x+=(kernel*cutoff_ratio))
 	{
-		pos.y=world_size.x*1.0f;
+		pos.y=world_size.y*1.0f;
 		add_particle(pos, vel, BC, num_particle_bc);
  	}
 
@@ -134,7 +134,6 @@ void SPHSystem::init_boundary()
 		add_particle(pos, vel, BC, num_particle_bc);
  	}
 
-	// printf("here is %f",kernel*cutoff_ratio);
 	printf("Init BC Particle: %u\n", num_particle_bc);
 }
 
