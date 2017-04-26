@@ -1,6 +1,6 @@
 CC = g++
 # CFLAGS = -O0 -g -lm
-CFLAGS = -Wno-deprecated-declarations
+CFLAGS =
 LIBS = -lm -lGL -lGLU -lglut
 
 
