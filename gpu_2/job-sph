@@ -1,9 +1,0 @@
-#!/bin/bash
-#SBATCH -A TG-CCR140008
-#SBATCH -J sph-gpu
-#SBATCH -o sph-gpu.stdout
-#SBATCH -n 1         
-#SBATCH -p gpu
-#SBATCH -t 00:10:00     
-ibrun ./sph-gpu -Nt 1000 -o sph-gpu.txt
-

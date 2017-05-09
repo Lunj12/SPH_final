@@ -7,51 +7,8 @@ float input_world_size;
 int NSTEPS;
 int SAVEFREQ = 1;
 
-bool init_cuda(void)
-{
-	int count = 0;
-	int i = 0;
-
-	cudaGetDeviceCount(&count);
-	if(count == 0)
-	{
-		fprintf(stderr, "There is no device.\n");
-		return false;
-	}
-	for(i = 0; i < count; i++)
-	{
-		cudaDeviceProp prop;
-		if(cudaGetDeviceProperties(&prop, i) == cudaSuccess)
-		{
-			if(prop.major >= 1)
-			{
-				break;
-			}
-		}
-	}
-	if(i == count)
-	{
-		fprintf(stderr, "There is no device supporting CUDA.\n");
-		return false;
-	}
-
-	cudaSetDevice(i);
-
-	printf("CUDA initialized.\n");
-	return true;
-}
-
-
 int main(int argc, char **argv)
 {
-	init_cuda();
-	cudaDeviceProp prop;
-    int dev;
-	memset( &prop, 0, sizeof( cudaDeviceProp ) );
-    prop.major = 1;
-    prop.minor = 0;
-    cudaChooseDevice( &dev, &prop );
-
 	if( find_option( argc, argv, "-h" ) >= 0 )
 	    {
 	        printf( "Options:\n" );
@@ -73,27 +30,31 @@ int main(int argc, char **argv)
 
 	// non-visualization, save the data
 	sph=new SPHSystem(input_world_size, input_cutoff_ratio);
+
+	// initialize particles boundaries and bodies
 	sph->init_system();
 	sph->init_boundary();
-  sph->init_body();
+	sph->init_body();
 
 	// run
 	sph->sys_running=1-sph->sys_running;
 	// record time
 	double simulation_time = read_timer( );
+
 	for(int step=0;step < NSTEPS; step++)
 	{
 		sph->animation();
+
 		// save data at proper time
 		if( fsave && (step%SAVEFREQ) == 0 )
 		{
 		 	fprintf(fsave,"Time Step = %d\n",step);
-		 	save( fsave, sph->hParam->num_particle, sph );
+		 	save( fsave, sph->num_particle, sph );
 		}
 	}
 
 	simulation_time = read_timer( ) - simulation_time;
-	printf( "N = %d, simulation time = %g seconds\n", sph->hParam->num_particle, simulation_time);
+	printf( "N = %d, simulation time = %g seconds\n", sph->num_particle + sph->num_particle_bc + sph->num_particle_body, simulation_time);
 
 	if( fsave )
 		fclose( fsave );

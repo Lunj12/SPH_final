@@ -7,6 +7,7 @@
 #include <thrust/for_each.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/sort.h>
+#include <thrust/system_error.h>
 
 #include <vector>
 #include <list>
